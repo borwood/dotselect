@@ -32,20 +32,23 @@ xml_text = """<?xml version="1.0"?>
 </catalog>
 """
 
-headers, rows = ["title", "first word"], []
+headers, rows = ["title", "first word", "chapter words"], []
 
 root = xml_node(xml_text, headers, rows)
+trunk = root.catalog.book.where(lambda a,c,t: a["id"].startswith("1"))
 
-(
-    root.book.where(
-        lambda a, c, t: a["id"].startswith("1") and c["author"].text == "John Doe"
-    )
-    .extract(lambda r, a, c, t: r.assign("title", c["title"].text))
-    .chapter.where(lambda a, c, t: a["number"] == "1")
-    .page.where(lambda a, c, t: a["number"] == "1")
-    .extract(lambda r, a, c, t: r.assign("first word", t.split()[0]))
-    .commit()
-)
+# Branch 1 –  grab book-level title
+branch1 = (trunk.extract(lambda r,a,c,t: r.assign("title", c["title"].text)))
+
+# Branch 2 –  go deeper and capture words
+branch2 = (trunk.chapter.where(lambda a,c,t: a["number"] == "1")
+               .page.where(lambda a,c,t: a["number"] == "1")
+               .extract(lambda r,a,c,t:
+                        r.assign("first word", t.split()[0])
+                         .assign("chapter words", len(t.split()))))
+
+# Merge, then commit once
+(branch1 + branch2).commit()
 
 print(rows)
 to_csv(rows, headers, "output.csv")

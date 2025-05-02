@@ -41,6 +41,32 @@ class NodeProxy:
             for child in el.iterfind(tag):
                 children.append((child, row.copy()))
         return NodeProxy(children, self.headers, self.extractions)
+    
+        # ── branch merge / union ───────────────────────────────────────────────
+    def __add__(self, other: "NodeProxy") -> "NodeProxy":
+        if not isinstance(other, NodeProxy):
+            return NotImplemented
+        if self.headers != other.headers:
+            raise ValueError("Cannot merge proxies with different header sets")
+
+        merged_by_id: dict[str, Row] = {}
+
+        def _absorb(items):
+            for _el, row in items:
+                rid = row._row_id
+                # first row with this id -> copy
+                if rid not in merged_by_id:
+                    merged_by_id[rid] = Row(row)        # shallow copy
+                else:
+                    merged_by_id[rid].update(row)       # union keys
+
+        _absorb(self._items)
+        _absorb(other._items)
+
+        # fabricate dummy-element None; we only care about rows now
+        combined_items = [(None, r) for r in merged_by_id.values()]
+        return NodeProxy(combined_items, self.headers, self.extractions)
+
 
     # ── filtering ──────────────────────────────────────────────────────────
     def where(self, fn: Predicate) -> "NodeProxy":
