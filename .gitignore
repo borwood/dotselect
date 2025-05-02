@@ -1,0 +1,51 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.eggs/
+dist/
+build/
+sdist/
+*.egg-info/
+*.whl
+
+# Installed packages
+# edit: this is not a good idea, as it ignores everything in virtualenv
+# venv/ 
+# Instead, add the following lines:
+venv/*
+!venv/.git*
+env/
+lib/*
+!lib/.git*
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+*.coverage
+nosetests.xml
+coverage.xml
+*.log
+.pytest_cache/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+environment/
+instance/
+_env/
+.python-version
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# System files
+.DS_Store
+ntuser.dat*
+thumbs.db

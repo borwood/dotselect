@@ -1,0 +1,373 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="CDA_EHR.xsl"?>
+<ClinicalDocument
+	xmlns="urn:hl7-org:v3"
+	xmlns:sdtc="urn:hl7-org:sdtc"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:hl7-org:v3 infrastructure/cda/CDA_SDTC.xsd">
+	<realmCode code="US" />
+	<typeId extension="POCD_HD000040" root="2.16.840.1.113883.1.3" />
+	<templateId extension="2015-08-01" root="2.16.840.1.113883.10.20.22.1.1" />
+	<templateId root="2.16.840.1.113883.10.20.22.1.1" />
+	<templateId extension="2015-08-01" root="2.16.840.1.113883.10.20.22.1.2" />
+	<templateId root="2.16.840.1.113883.10.20.22.1.2" />
+	<id extension="d9754146-e710-4276-9cb5-8d385d8aa558" root="2.16.840.1.113883.3.3388.1.1.1.1117548" />
+	<code code="34133-9" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="SUMMARIZATION OF EPISODE NOTE" />
+	<title >Transition Of Care Record</title>
+	<effectiveTime value="20250502141826" />
+	<confidentialityCode code="R" codeSystem="2.16.840.1.113883.5.25" codeSystemName="Confidentiality" displayName="Restricted" />
+	<languageCode code="en-US" />
+	<recordTarget >
+		<patientRole>
+			<id extension="e06db247-694f-4176-b09c-37d2eaf0f010" root="2.16.840.1.113883.3.3388.1.1.1.1117548.3"/>
+			<id extension="MR000068/04/2025" root="2.16.840.1.113883.3.3388.3.3"/>
+			<id extension="rkkualGVq0hf1745606445007" root="2.16.840.1.113883.3.3388.3.4"/>
+			<addr use="HP">
+				<city>Athens</city>
+				<streetAddressLine>2005 Prince Ave</streetAddressLine>
+				<state>GA</state>
+				<country>USA</country>
+				<postalCode>30606</postalCode>
+			</addr>
+			<telecom use="MC" value="tel:1233334455"/>
+			<telecom use="WP" value="tel:"/>
+			<patient>
+				<name use="L">
+					<family>Patel</family>
+					<given>David</given>
+				</name>
+				<administrativeGenderCode code="M" codeSystem="2.16.840.1.113883.5.1"/>
+				<birthTime value="19960101"/>
+				<raceCode nullFlavor="NASK"/>
+				<ethnicGroupCode nullFlavor="NASK"/>
+				<languageCommunication>
+					<languageCode nullFlavor="NI"/>
+				</languageCommunication>
+			</patient>
+			<providerOrganization>
+				<id root="2.16.840.1.113883.3.3388.1.1.1.1117548"/>
+				<name>Medical Office Force, LLC.</name>
+				<telecom use="WP" value="tel:+1(877)581-8810"/>
+				<addr use="WP">
+					<streetAddressLine>2005 Prince Ave</streetAddressLine>
+					<city>Athens</city>
+					<state>GA</state>
+					<postalCode>30606</postalCode>
+					<country>United States of America</country>
+				</addr>
+			</providerOrganization>
+		</patientRole>
+	</recordTarget>
+	<author >
+		<time value="20240822170520+0000"/>
+		<assignedAuthor>
+			<id root="2.16.840.1.113883.3.3388"/>
+			<addr use="WP">
+				<streetAddressLine>731 Market St #400</streetAddressLine>
+				<city>San Francisco</city>
+				<state>CA</state>
+				<postalCode>94103</postalCode>
+				<country>US</country>
+			</addr>
+			<telecom use="WP" value="tel:+1(877)581-8810"/>
+			<assignedAuthoringDevice>
+				<manufacturerModelName>Medical Office Force, LLC.</manufacturerModelName>
+				<softwareName>Medical Office Force EHR</softwareName>
+			</assignedAuthoringDevice>
+			<representedOrganization>
+				<id extension="43a8e450-2a5f-4bcc-82b7-87a7e24e2641" root="2.16.840.1.113883.3.3388.3.1"/>
+				<id nullFlavor="UNK" root="2.16.840.1.113883.4.6"/>
+				<id root="2.16.840.1.113883.3.3388.1.1.1.1117548"/>
+				<name>Medical Office Force, LLC.</name>
+				<addr use="WP">
+					<streetAddressLine>2005 Prince Ave</streetAddressLine>
+					<city>Athens</city>
+					<state>GA</state>
+					<postalCode>30606</postalCode>
+					<country>United States of America</country>
+				</addr>
+			</representedOrganization>
+		</assignedAuthor>
+	</author>
+	<dataEnterer >
+		<assignedEntity>
+			<id extension="1962167874" root="2.16.840.1.113883.4.6"/>
+			<id extension="5e6c1978-10b6-47ab-a453-1a66d83c3514" root="2.16.840.1.113883.3.3388.3.9"/>
+			<id extension="925d01f1-b254-46e8-84a0-4dee0cd4fc75" root="2.16.840.1.113883.3.3388.3.2"/>
+			<id extension="UFDT-HAWW4" root="2.16.840.1.113883.3.3388.3.6"/>
+			<addr use="WP">
+				<streetAddressLine>2005 Prince Ave</streetAddressLine>
+				<city>Athens</city>
+				<state>GA</state>
+				<postalCode>30606</postalCode>
+				<country>United States of America</country>
+			</addr>
+			<telecom use="WP" value="tel:+1(877)581-8810"/>
+			<assignedPerson>
+				<name>
+					<given>Subodh</given>
+					<family>Agrawal</family>
+				</name>
+			</assignedPerson>
+		</assignedEntity>
+	</dataEnterer>
+	<custodian >
+		<assignedCustodian>
+			<representedCustodianOrganization>
+				<id extension="POCD_HD000040" root="2.16.840.1.113883.3.3388.1.1.1.1117548"/>
+				<name>Medical Office Force, LLC.</name>
+				<telecom use="WP" value="tel:+1(312)208-9377"/>
+				<addr use="WP">
+					<streetAddressLine>2005 Prince Ave</streetAddressLine>
+					<city>Athens</city>
+					<state>GA</state>
+					<postalCode>30606</postalCode>
+					<country>United States of America</country>
+				</addr>
+			</representedCustodianOrganization>
+		</assignedCustodian>
+	</custodian>
+	<documentationOf >
+		<serviceEvent classCode="PCPR" moodCode="EVN">
+			<effectiveTime>
+				<low value="20250502141826+0000"/>
+				<high nullFlavor="NI"/>
+			</effectiveTime>
+		</serviceEvent>
+	</documentationOf>
+	<componentOf >
+		<encompassingEncounter>
+			<id extension="560719788" root="2.16.840.1.113883.3.3388.1.1.1.1117548.4.1.4"/>
+			<effectiveTime>
+				<low value="20250502141826+0000"/>
+				<high value="20250502141826+0000"/>
+			</effectiveTime>
+		</encompassingEncounter>
+	</componentOf>
+	<component >
+		<structuredBody>
+			<component>
+				<section>
+					<templateId root="2.16.840.1.113883.10.20.22.2.5.1"/>
+					<templateId extension="2025-05-02" root="2.16.840.1.113883.10.20.22.2.5.1"/>
+					<code code="11450-4" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Problem List"/>
+					<title>Problem List</title>
+					<text>
+						<table border="1" width="100%">
+							<thead>
+								<tr>
+									<th>Condition</th>
+									<th>ICD10-CM Code</th>
+									<th>Onset Dates</th>
+									<th>Recorded Date</th>
+									<th>Notes</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td>null</td>
+									<td>null</td>
+									<td>-</td>
+									<td/>
+									<td>ICD 10 Code : null - null</td>
+								</tr>
+								<tr>
+									<td>Major depressive disorder, single episode, unspecified</td>
+									<td>F32.9</td>
+									<td>Apr 25, 2025</td>
+									<td/>
+									<td>ICD 10 Code : F32.9 - Major depressive disorder, single episode, unspecified</td>
+								</tr>
+								<tr>
+									<td>Type 1 diabetes mellitus with ketoacidosis without coma</td>
+									<td>E10.10</td>
+									<td>Apr 25, 2025</td>
+									<td/>
+									<td>ICD 10 Code : E10.10 - Type 1 diabetes mellitus with ketoacidosis without coma</td>
+								</tr>
+								<tr>
+									<td>null</td>
+									<td>null</td>
+									<td>-</td>
+									<td/>
+									<td>ICD 10 Code : null - null</td>
+								</tr>
+							</tbody>
+						</table>
+					</text>
+					<entry typeCode="DRIV">
+						<act classCode="ACT" moodCode="EVN">
+							<templateId extension="2025-05-02" root="2.16.840.1.113883.10.20.22.4.3"/>
+							<id root="c12d6bfd-d78c-4b51-8af0-da00a3be57a3"/>
+							<code code="CONC" codeSystem="2.16.840.1.113883.5.6" displayName="Concerns"/>
+							<statusCode code="active"/>
+							<effectiveTime>
+								<low nullFlavor="NI"/>
+							</effectiveTime>
+							<entryRelationship typeCode="SUBJ">
+								<observation classCode="OBS" moodCode="EVN">
+									<templateId extension="2025-05-02" root="2.16.840.1.113883.10.20.22.4.4"/>
+									<id root="2805732a-aab2-405b-bcb0-4ee336e329cc"/>
+									<code code="55607006" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Problem"/>
+									<statusCode code="completed"/>
+									<effectiveTime nullFlavor="UNK"/>
+									<value code="null" codeSystem="2.16.840.1.113883.6.90" codeSystemName="ICD-10-CM" displayName="null" xsi:type="CD"/>
+								</observation>
+							</entryRelationship>
+						</act>
+					</entry>
+					<entry typeCode="DRIV">
+						<act classCode="ACT" moodCode="EVN">
+							<templateId extension="2025-05-02" root="2.16.840.1.113883.10.20.22.4.3"/>
+							<id root="1af83613-f71f-415a-8afb-3769d97a2911"/>
+							<code code="CONC" codeSystem="2.16.840.1.113883.5.6" displayName="Concerns"/>
+							<statusCode code="active"/>
+							<effectiveTime>
+								<low nullFlavor="NI"/>
+							</effectiveTime>
+							<entryRelationship typeCode="SUBJ">
+								<observation classCode="OBS" moodCode="EVN">
+									<templateId extension="2025-05-02" root="2.16.840.1.113883.10.20.22.4.4"/>
+									<id root="7c66a931-0800-4e34-8e66-d46d48958563"/>
+									<code code="55607006" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Problem"/>
+									<statusCode code="completed"/>
+									<effectiveTime nullFlavor="UNK"/>
+									<value code="F32.9" codeSystem="2.16.840.1.113883.6.90" codeSystemName="ICD-10-CM" displayName="Major depressive disorder, single episode, unspecified" xsi:type="CD"/>
+								</observation>
+							</entryRelationship>
+						</act>
+					</entry>
+					<entry typeCode="DRIV">
+						<act classCode="ACT" moodCode="EVN">
+							<templateId extension="2025-05-02" root="2.16.840.1.113883.10.20.22.4.3"/>
+							<id root="871b9d0a-9518-42f9-95ab-6b582f4d534c"/>
+							<code code="CONC" codeSystem="2.16.840.1.113883.5.6" displayName="Concerns"/>
+							<statusCode code="active"/>
+							<effectiveTime>
+								<low nullFlavor="NI"/>
+							</effectiveTime>
+							<entryRelationship typeCode="SUBJ">
+								<observation classCode="OBS" moodCode="EVN">
+									<templateId extension="2025-05-02" root="2.16.840.1.113883.10.20.22.4.4"/>
+									<id root="20c451a2-e966-446a-a078-5ee8233ed789"/>
+									<code code="55607006" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Problem"/>
+									<statusCode code="completed"/>
+									<effectiveTime nullFlavor="UNK"/>
+									<value code="E10.10" codeSystem="2.16.840.1.113883.6.90" codeSystemName="ICD-10-CM" displayName="Type 1 diabetes mellitus with ketoacidosis without coma" xsi:type="CD"/>
+								</observation>
+							</entryRelationship>
+						</act>
+					</entry>
+					<entry typeCode="DRIV">
+						<act classCode="ACT" moodCode="EVN">
+							<templateId extension="2025-05-02" root="2.16.840.1.113883.10.20.22.4.3"/>
+							<id root="b16b61dc-b378-4e9e-8bb6-5ac0643ba3a7"/>
+							<code code="CONC" codeSystem="2.16.840.1.113883.5.6" displayName="Concerns"/>
+							<statusCode code="active"/>
+							<effectiveTime>
+								<low nullFlavor="NI"/>
+							</effectiveTime>
+							<entryRelationship typeCode="SUBJ">
+								<observation classCode="OBS" moodCode="EVN">
+									<templateId extension="2025-05-02" root="2.16.840.1.113883.10.20.22.4.4"/>
+									<id root="64caa8f8-e9cf-4836-88cb-681daec40c5d"/>
+									<code code="55607006" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Problem"/>
+									<statusCode code="completed"/>
+									<effectiveTime nullFlavor="UNK"/>
+									<value code="null" codeSystem="2.16.840.1.113883.6.90" codeSystemName="ICD-10-CM" displayName="null" xsi:type="CD"/>
+								</observation>
+							</entryRelationship>
+						</act>
+					</entry>
+				</section>
+			</component>
+			<component>
+				<section>
+					<templateId root="2.16.840.1.113883.10.20.22.2.18"/>
+					<templateId extension="2025-05-02" root="2.16.840.1.113883.10.20.22.2.18"/>
+					<code code="48768-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Payers"/>
+					<title>INSURANCE PROVIDERS</title>
+					<text>
+						<table border="1" width="100%">
+							<thead>
+								<tr>
+									<th>Insurance Plan Name</th>
+									<th>Policy Number</th>
+									<th>Group ID</th>
+									<th>Insurance Plan Phone</th>
+									<th>Insurance Plan Address</th>
+								</tr>
+							</thead>
+							<tbody/>
+						</table>
+					</text>
+				</section>
+			</component>undefined
+			<component>
+				<section nullFlavor="NI">
+					<templateId root="2.16.840.1.113883.10.20.22.2.2.1"/>
+					<templateId extension="2025-05-02" root="2.16.840.1.113883.10.20.22.2.2.1"/>
+					<code code="11369-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="History of immunizations"/>
+					<title>IMMUNIZATIONS</title>
+					<text>
+						<table border="1" width="100%">
+							<thead>
+								<tr>
+									<th>Vaccine Name</th>
+									<th>Date Received</th>
+								</tr>
+							</thead>
+						</table>
+					</text>
+				</section>
+			</component>
+			<component>
+				<section>
+					<templateId root="2.16.840.1.113883.10.20.22.2.22.1"/>
+					<templateId extension="2025-05-02" root="2.16.840.1.113883.10.20.22.2.22.1"/>
+					<code code="46240-8" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="History of encounters"/>
+					<title>History Of Encounters</title>
+					<text>
+						<table border="1" width="100%">
+							<thead>
+								<tr>
+									<th>Encounter Code</th>
+									<th>Reason for Visit</th>
+									<th>Start Date</th>
+								</tr>
+							</thead>
+							<tbody/>
+						</table>
+						<paragraph>
+							<content>WARNING:The information contained in this section is historical and is provided for information only and taken from valid electronic medical system . Please verify the information with the holder of the legal document before using it for clinical purposes.</content>
+						</paragraph>
+					</text>
+				</section>
+			</component>
+			<component>
+				<section nullFlavor="NI">
+					<templateId root="2.16.840.1.113883.10.20.22.2.3.1"/>
+					<templateId extension="2025-05-02" root="2.16.840.1.113883.10.20.22.2.3.1"/>
+					<code code="11369-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="History of Observation"/>
+					<title>Labs/Observations</title>
+					<text>
+						<table border="1" width="100%">
+							<thead>
+								<tr>
+									<th>Observation Date</th>
+									<th>Lab Result Name</th>
+									<th>Refrence Range Low</th>
+									<th>Refrence Range Normal</th>
+									<th>Refrence Range High</th>
+									<th>Lab Result Unit</th>
+									<th>Lab Result Value</th>
+									<th>Lab Name</th>
+								</tr>
+							</thead>
+						</table>
+					</text>
+				</section>
+			</component>
+		</structuredBody>
+	</component>
+</ClinicalDocument>
+------------a15e28dc-297c-4371-b88d-5f9ac24b5ee2--
