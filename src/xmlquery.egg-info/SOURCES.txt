@@ -1,0 +1,10 @@
+pyproject.toml
+src/xmlquery/__init__.py
+src/xmlquery/core.py
+src/xmlquery/old.py
+src/xmlquery/row.py
+src/xmlquery.egg-info/PKG-INFO
+src/xmlquery.egg-info/SOURCES.txt
+src/xmlquery.egg-info/dependency_links.txt
+src/xmlquery.egg-info/requires.txt
+src/xmlquery.egg-info/top_level.txt

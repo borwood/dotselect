@@ -1,0 +1,11 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xmlquery"
+version = "0.0.1"
+description = "Fluent, chainable XML query → CSV rows (lxml-powered)"
+authors = [{name = "Brennan Norwood", email = "you@example.com"}]
+dependencies = ["lxml>=5.4.0"]
+requires-python = ">=3.9"

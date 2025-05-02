@@ -1,0 +1,7 @@
+Metadata-Version: 2.4
+Name: xmlquery
+Version: 0.0.1
+Summary: Fluent, chainable XML query → CSV rows
+Author-email: Your Name <you@example.com>
+Requires-Python: >=3.9
+Requires-Dist: lxml>=5.4.0
