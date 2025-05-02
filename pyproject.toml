@@ -5,7 +5,16 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "xmlquery"
 version = "0.0.1"
+license = { text = "Apache License 2.0" }
 description = "Fluent, chainable XML query → CSV rows (lxml-powered)"
-authors = [{name = "Brennan Norwood", email = "you@example.com"}]
+authors = [{name = "Brennan Norwood", email = "113669828+borwood@users.noreply.github.com"}]
 dependencies = ["lxml>=5.4.0"]
 requires-python = ">=3.9"
+readme = "README.md"
+keywords = ["xml", "xpath", "dsl", "csv", "lxml", "query"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: Apache Software License",
+  "Topic :: Text Processing :: Markup :: XML",
+  "Intended Audience :: Developers",
+]
