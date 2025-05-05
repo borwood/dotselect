@@ -1,15 +1,20 @@
 from __future__ import annotations
 from typing import Callable, List, Dict, Tuple
-
+from collections import defaultdict
 from lxml import etree as ET
 from .row import Row
 
 Predicate = Callable[[Dict[str, str], "NodeProxyChildren", str], bool]
 Extractor = Callable[[Row, Dict[str, str], "NodeProxyChildren", str], None]
-
+grouped_children = defaultdict(list)
 
 class NodeProxyChildren(dict):
     """Maps child tag names to single-element NodeProxy wrappers."""
+    def __getattr__(self, tag: str) -> "NodeProxy":
+        try:
+            return self[tag]
+        except KeyError:
+            raise AttributeError(f"No child tag named '{tag}'")
 
 
 class NodeProxy:
@@ -31,15 +36,15 @@ class NodeProxy:
 
     # ── traversal ──────────────────────────────────────────────────────────
     def __getattr__(self, tag: str) -> "NodeProxy":
-        """
-        Descend into child elements named *tag*.
-        Each child is paired with a copy of its parent's Row so that sibling
-        branches cannot overwrite each other's data.
-        """
-        children: List[Tuple[ET._Element, Row]] = []
+        children = []
         for el, row in self._items:
+            # create NEW id only if this row hasn't been 'sealed' yet
+            fresh = not row._sealed
             for child in el.iterfind(tag):
-                children.append((child, row.copy()))
+                child_row = row.copy(new_id=fresh)
+                print(f"child.tag: {child.tag}" + f" | new_id: {fresh}")
+                child_row._sealed = True  # prevent deeper splits
+                children.append((child, child_row))
         return NodeProxy(children, self.headers, self.extractions)
     
         # ── branch merge / union ───────────────────────────────────────────────
@@ -68,44 +73,109 @@ class NodeProxy:
         return NodeProxy(combined_items, self.headers, self.extractions)
 
 
+    # ── addition ──────────────────────────────────────────────────────────
+    def __add__(self, other: "NodeProxy") -> "NodeProxy":
+        if not isinstance(other, NodeProxy):
+            return NotImplemented
+        if self.headers != other.headers:
+            raise ValueError("Header sets differ; cannot merge.")
+
+        merged_by_id: dict[str, Row] = {}
+
+        def _absorb(items):
+            for _el, row in items:
+                rid = getattr(row, "_row_id", id(row))  # fall back for safety
+                if rid not in merged_by_id:
+                    merged_by_id[rid] = row  # first time we see this row
+                else:
+                    merged_by_id[rid].update(row)  # union columns
+
+        _absorb(self._items)
+        _absorb(other._items)
+
+        # We don't care which element pointer survives; keep first or None
+        combined_items = [(None, r) for r in merged_by_id.values()]
+        return NodeProxy(combined_items, self.headers, self.extractions)
+
     # ── filtering ──────────────────────────────────────────────────────────
     def where(self, fn: Predicate) -> "NodeProxy":
         """
         Keep only the element/row pairs for which *fn* returns True.
-        fn(signature): (attributes, children_proxy, text) -> bool
+        fn signature: (attributes, children_proxy, text) -> bool
         """
         kept: List[Tuple[ET._Element, Row]] = []
+
         for el, row in self._items:
             a = el.attrib
+
+            # Group children by tag
+            grouped_children = defaultdict(list)
+            for ch in el:
+                grouped_children[ch.tag].append(ch)
+
+            # Wrap each tag's group into a NodeProxy
             c = NodeProxyChildren(
                 {
-                    ch.tag: NodeProxy(
-                        [(ch, row.copy())], self.headers, self.extractions
+                    tag: NodeProxy(
+                        [(ch, row.copy(new_id=True)) for ch in group],
+                        self.headers,
+                        self.extractions,
                     )
-                    for ch in el
+                    for tag, group in grouped_children.items()
                 }
             )
+
             t = (el.text or "").strip()
+
             if fn(a, c, t):
                 kept.append((el, row))
+
         return NodeProxy(kept, self.headers, self.extractions)
+
+    def where2(self, fn) -> "NodeProxy":
+        filtered_items = []
+        for el, row in self._items:
+            a = el.attrib  # attributes
+            t = (el.text or "").strip()  # text
+
+            # making 'c' (children)
+            child_items = []
+            for child in el:
+                child_row = row.copy(new_id=False)
+                child_items.append((child, child_row))
+            c = NodeProxy(child_items, self.headers, self.row)
+
+            if fn(a, c, t):
+                filtered_items.append((el, row))
+        return NodeProxy(filtered_items, self.headers, self.extractions)
 
     # ── extraction ─────────────────────────────────────────────────────────
     def extract(self, fn: Extractor) -> "NodeProxy":
         """
         Mutate the Row for every element/row pair using user-supplied *fn*.
-        fn(signature): (row, attributes, children_proxy, text) -> None
+        fn signature: (row, attributes, children_proxy, text) -> None
         """
         for el, row in self._items:
             a = el.attrib
+
+            # Group children by tag
+            grouped_children = defaultdict(list)
+            for ch in el:
+                grouped_children[ch.tag].append(ch)
+
+            # Wrap each group in a NodeProxy (sharing the same row)
             c = NodeProxyChildren(
                 {
-                    ch.tag: NodeProxy([(ch, row)], self.headers, self.extractions)
-                    for ch in el
+                    tag: NodeProxy(
+                        [(ch, row) for ch in group], self.headers, self.extractions
+                    )
+                    for tag, group in grouped_children.items()
                 }
             )
+
             t = (el.text or "").strip()
             fn(row, a, c, t)
+
         return self
 
     # ── termination ────────────────────────────────────────────────────────
@@ -125,7 +195,7 @@ class NodeProxy:
         return self._items[0][0] if self._items else None
 
     @property
-    def text(self) -> str:
+    def inner_text(self) -> str:
         """Shorthand for `.elem.text.strip()`."""
         el = self.elem
         return (el.text or "").strip() if el is not None else ""
@@ -136,27 +206,35 @@ class NodeProxy:
 
 
 # ── helper functions ───────────────────────────────────────────────────────
+def strip_namespaces(root: ET._Element):
+    """In-place removal of namespace URIs from element tags."""
+    for el in root.iter():
+        if isinstance(el.tag, str):
+            if "}" in el.tag:
+                el.tag = el.tag.split("}", 1)[1]  # remove namespace prefix
 
 
 def _parse(source) -> ET._Element:
     """
     Parse *source* into an lxml Element.
-
-    *source* may be:
-      • a str/Path pointing to a file,
-      • a file-like object,
-      • a str containing raw XML (with or without encoding declaration).
+    Supports: str path, file-like object, or raw XML string.
+    Always strips namespaces.
     """
     if hasattr(source, "read"):
         data = source.read()
-        return ET.fromstring(
+        root = ET.fromstring(
             data if isinstance(data, (bytes, bytearray)) else data.encode()
         )
-    s = str(source)
-    if "<" in s.lstrip()[:10]:
-        return ET.fromstring(s.encode())
-    parser = ET.XMLParser(recover=True, huge_tree=True)
-    return ET.parse(s, parser).getroot()
+    else:
+        s = str(source)
+        if "<" in s.lstrip()[:10]:
+            root = ET.fromstring(s.encode())
+        else:
+            parser = ET.XMLParser(recover=True, huge_tree=True)
+            root = ET.parse(s, parser).getroot()
+
+    strip_namespaces(root)
+    return root
 
 
 def xml_node(source, headers: List[str], extractions: List[Row]) -> NodeProxy:
@@ -168,4 +246,9 @@ def xml_node(source, headers: List[str], extractions: List[Row]) -> NodeProxy:
     • *extractions* list to be populated with Row objects
     """
     root = _parse(source)
+    print("root.tag:", root.tag)
+    for el in root.iter():
+        print(el.tag)
+        break
+
     return NodeProxy([(root, Row())], headers, extractions)
