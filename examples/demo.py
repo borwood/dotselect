@@ -36,16 +36,39 @@ headers, rows = ["title", "first word"], []
 
 root = xml_node(xml_text, headers, rows)
 
-(
-    root.book.where(
-        lambda a, c, t: a["id"].startswith("1") and c["author"].text == "John Doe"
-    )
-    .extract(lambda r, a, c, t: r.assign("title", c["title"].text))
-    .chapter.where(lambda a, c, t: a["number"] == "1")
-    .page.where(lambda a, c, t: a["number"] == "1")
-    .extract(lambda r, a, c, t: r.assign("first word", t.split()[0]))
-    .commit()
+# (
+#     root.book.where(
+#         lambda a, c, t: a["id"].startswith("1") and c["author"].text == "John Doe"
+#     )
+#     .extract(lambda r, a, c, t: r.assign("title", c["title"].text))
+#     .chapter.where(lambda a, c, t: a["number"] == "1")
+#     .page.where(lambda a, c, t: a["number"] == "1")
+#     .extract(lambda r, a, c, t: r.assign("first word", t.split()[0]))
+#     .commit()
+# )
+
+# TESTING NEW FORK AND MERGE------------------
+print("root", len(root._items))
+print("root.book", len(root.book._items))
+
+books = root.book.where(lambda a, c, t: c["author"].inner_text == "John Doe")
+print("books after where", len(books._items))
+
+branch_title = books.extract(
+    lambda r, a, c, t: r.assign("title", c["title"].inner_text)
+)
+branch_words = (
+    books.chapter.where(lambda a, c, t: a.get("number") == "1")
+    .page.where(lambda a, c, t: a.get("number") == "1")
+    .extract(
+        lambda r, a, c, t: r.assign("first word", (t or "").split()[0])
+    )  # safe split
 )
 
-print(rows)
+merged = branch_title + branch_words
+print("merged", len(merged._items))
+
+merged.commit()
+print("rows", rows)
+
 to_csv(rows, headers, "output.csv")
