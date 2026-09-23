@@ -1,4 +1,6 @@
-from .core import xml_node
-from .writer import to_csv
+"""Deprecated compatibility imports for the former ``xmlquery`` package."""
 
-__all__ = ["xml_node", "to_csv"]
+from dotselect import to_csv, xml_node
+from dotselect._prototype import xml_node as xml_node2
+
+__all__ = ["xml_node", "xml_node2", "to_csv"]

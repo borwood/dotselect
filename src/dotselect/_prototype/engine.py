@@ -1,0 +1,261 @@
+from typing import Callable, List, Dict, Tuple, Union
+from lxml import etree as ET
+from collections import defaultdict
+from .row import Row
+
+Predicate = Callable[[Dict[str, str], "NodeProxyChildren", str], bool]
+Extraction = Callable[["Row", Dict[str, str], "NodeProxyChildren", str], bool]
+
+
+class Element:
+    """Abstract element class for future non-XML source support."""
+
+    def __init__(self, source_object, source_type: str):
+        self._source_object = source_object
+        self._source_type = source_type
+
+    def findall(self, tag: str) -> List["Element"]:
+        match self._source_type:
+            case "xml":
+                return [
+                    Element(child, self._source_type)
+                    for child in self._source_object.iterfind(tag)
+                ]
+            case _:
+                return NotImplementedError(
+                    f"Source type {self._source_type} not supported"
+                )
+
+    @property
+    def tag(self) -> str:
+        match self._source_type:
+            case "xml":
+                return self._source_object.tag
+            case _:
+                return NotImplementedError(
+                    f"Source type {self._source_type} not supported"
+                )
+
+    @property
+    def attributes(self) -> dict:
+        match self._source_type:
+            case "xml":
+                return dict(self._source_object.attrib)
+            case _:
+                return NotImplementedError(
+                    f"Source type {self._source_type} not supported"
+                )
+
+    @property
+    def text(self) -> str:
+        match self._source_type:
+            case "xml":
+                return (self._source_object.text or "").strip()
+            case _:
+                return NotImplementedError(
+                    f"Source type {self._source_type} not supported"
+                )
+
+    @property
+    def children(self):
+        match self._source_type:
+            case "xml":
+                return [
+                    Element(child, self._source_type) for child in self._source_object
+                ]
+            case _:
+                return NotImplementedError(
+                    f"Source type {self._source_type} not supported"
+                )
+
+
+class NodeProxySettings:
+    """Settings object that informs the behavior of NodeProxy."""
+
+    def __init__(self, row_mode: str = "split", logging: bool = False):
+        self._row_mode = row_mode
+        self._logging = logging
+
+    def set_row_mode(self, new_value: str):
+        self._row_mode = new_value
+        return self
+
+    def set_logging(self, new_value: bool):
+        self._logging = new_value
+        return self
+
+    def partial_copy(
+        self, new_row_mode: str | None = None, new_logging: bool | None = None
+    ):
+        if new_row_mode is None:
+            new_row_mode = self._row_mode
+        if new_logging is None:
+            new_logging = self._logging
+        return NodeProxySettings(row_mode=new_row_mode, logging=new_logging)
+
+
+class NodeProxyChildren(Dict[str, "NodeProxy"]):
+    pass
+
+
+class NodeProxy:
+    def __init__(
+        self,
+        parent: Union["NodeProxy", None],
+        items: List[Tuple[Element, Row]],
+        tag: str,
+        keys: List[str],
+        selections: List[Row],
+        settings: NodeProxySettings = NodeProxySettings(),
+    ):
+        self._parent = parent
+        self._items = items
+        self._tag = tag
+        self._keys = keys
+        self._selections = selections
+        self._settings = settings
+
+        self._log(f"Touched: '{assemble_path(self)}'")
+
+    def _datakey(self) -> str:
+        datakey = ""
+        position = 0
+        for el, _ in self._items:
+            datakey = hash((el.tag, position))
+            position += 1
+
+    def _log(self, log: str):
+        if self._settings._logging == True:
+            print("[DOTS LOG]", log)
+
+    def _action_args(self, el: Element, row: Row, new_row_id: bool = False):
+        a = el.attributes
+        t = el.text
+
+        grouped_children = defaultdict(list)
+        for child in el.children:
+            grouped_children[child.tag].append(child)
+
+        c = NodeProxyChildren(
+            {
+                tag: NodeProxy(
+                    [(ch, row.copy(new_id=new_row_id)) for ch in group],
+                    self._keys,
+                    self._selections,
+                )
+                for tag, group in grouped_children.items()
+            }
+        )
+        return a, c, t
+
+    def flatten(self) -> "NodeProxy":
+        self._log("Row Mode: 'flatten'")
+        return NodeProxy(
+            parent=self._parent,
+            items=self._items,
+            tag=self._tag,
+            keys=self._keys,
+            selections=self._selections,
+            settings=self._settings.partial_copy(new_row_mode="flatten"),
+        )
+
+    def split(self) -> "NodeProxy":
+        self._log("Row Mode: 'split'")
+        return NodeProxy(
+            parent=self._parent,
+            items=self._items,
+            tag=self._tag,
+            keys=self._keys,
+            selections=self._selections,
+            settings=self._settings.partial_copy(new_row_mode="split"),
+        )
+
+    def __getattr__(self, tag: str) -> "NodeProxy":
+        children = []
+        for el, row in self._items:
+            try:
+                for ch in el.iterfind(tag):
+                    new_id = self._settings._row_mode != "flatten"
+                    child_row = row.copy(new_id=new_id)
+                    children.append((ch, child_row))
+            except Exception as e:
+                self._log(f"No {tag} found at {assemble_path(self)}; Error: {e}")
+                continue
+
+        return NodeProxy(
+            self, children, tag, self._keys, self._selections, self._settings
+        )
+
+    def __getitem__(self, tag: str) -> "NodeProxy":
+        return self.__getattr__(tag)
+
+    def where(self, fn) -> "NodeProxy":
+        kept_items = []
+        for el, row in self._items:
+            a, c, t = self._action_args(el, row)
+            if fn(a, c, t):
+                kept_items.append((el, row))
+        return NodeProxy(
+            self, kept_items, self._tag, self._keys, self._selections, self._settings
+        )
+
+    def select(self, fn) -> "NodeProxy":
+        for el, row in self._items:
+            a, c, t = self._action_args(el, row)
+            fn(row, a, c, t)
+        return self
+
+
+def strip_namespaces(root: ET._Element):
+    """In-place removal of namespace URIs from element tags."""
+    for el in root.iter():
+        if isinstance(el.tag, str):
+            if "}" in el.tag:
+                el.tag = el.tag.split("}", 1)[1]
+
+
+def _parse(source) -> ET._Element:
+    """Parse an XML string, path, or file-like object and strip namespaces."""
+    if hasattr(source, "read"):
+        data = source.read()
+        root = ET.fromstring(
+            data if isinstance(data, (bytes, bytearray)) else data.encode()
+        )
+    else:
+        s = str(source)
+        if "<" in s.lstrip()[:10]:
+            root = ET.fromstring(s.encode())
+        else:
+            parser = ET.XMLParser(recover=True, huge_tree=True)
+            root = ET.parse(s, parser).getroot()
+
+    strip_namespaces(root)
+    return root
+
+
+def xml_node(source, keys: List[str], selections: List[Row]) -> NodeProxy:
+    root = _parse(source)
+    for el in root.iter():
+        print(el.tag)
+        break
+
+    return NodeProxy(
+        parent=None,
+        items=[(Element(root, "xml"), Row())],
+        tag=root.tag,
+        keys=keys,
+        selections=selections,
+    )
+
+
+def assemble_path(node_proxy: "NodeProxy") -> str:
+    tags: List[str] = [node_proxy._tag]
+
+    def parent_tag(child: "NodeProxy"):
+        done = child._parent == None
+        if not done:
+            tags.append(child._parent._tag)
+            parent_tag(child=child._parent)
+
+    parent_tag(node_proxy)
+    return "/".join(str(tag) for tag in reversed(tags))
