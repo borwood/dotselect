@@ -15,8 +15,9 @@ rows for import pipelines, including representative C-CDA documents.
 
 ## Delivery slices
 
-1. **Traversal contract** — select children through dot notation and expose
-   attributes, text, and child proxies without silent failures.
+1. **Traversal contract** — complete. The prototype selects children through
+   dot notation, exposes attributes/text and child proxies, strips namespaces,
+   and surfaces adapter failures instead of silently returning no matches.
 2. **Row lifecycle** — define `Row.assign`, copy/identity behavior, `extract`,
    and `commit`.
 3. **Branch merge** — merge independently traversed branches back into source
