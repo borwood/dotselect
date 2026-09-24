@@ -105,6 +105,7 @@ class NodeProxy:
         selections: List[Row],
         settings: NodeProxySettings | None = None,
         origin=None,
+        allocates_lineage: bool = False,
     ):
         self._parent = parent
         self._items = items
@@ -113,6 +114,7 @@ class NodeProxy:
         self._selections = selections
         self._settings = settings or NodeProxySettings()
         self._origin = origin
+        self._allocates_lineage = allocates_lineage
 
         self._log(f"Touched: '{assemble_path(self)}'")
 
@@ -145,6 +147,7 @@ class NodeProxy:
                     selections=self._selections,
                     settings=self._settings,
                     origin=self._origin,
+                    allocates_lineage=False,
                 )
                 for tag, group in grouped_children.items()
             }
@@ -161,6 +164,7 @@ class NodeProxy:
             selections=self._selections,
             settings=self._settings.partial_copy(new_row_mode="flatten"),
             origin=self._origin,
+            allocates_lineage=self._allocates_lineage,
         )
 
     def split(self) -> "NodeProxy":
@@ -173,15 +177,17 @@ class NodeProxy:
             selections=self._selections,
             settings=self._settings.partial_copy(new_row_mode="split"),
             origin=self._origin,
+            allocates_lineage=self._allocates_lineage,
         )
 
     def __getattr__(self, tag: str) -> "NodeProxy":
         children = []
-        is_first_level = self._parent is None
         for el, row in self._items:
             for ch in el.findall(tag):
                 new_id = self._settings._row_mode != "flatten"
-                lineage_id = uuid.uuid4().hex if is_first_level else None
+                lineage_id = (
+                    uuid.uuid4().hex if self._allocates_lineage else None
+                )
                 child_row = row.copy(new_id=new_id, lineage_id=lineage_id)
                 children.append((ch, child_row))
 
@@ -193,6 +199,7 @@ class NodeProxy:
             self._selections,
             self._settings,
             self._origin,
+            False,
         )
 
     def __getitem__(self, tag: str) -> "NodeProxy":
@@ -227,6 +234,7 @@ class NodeProxy:
             self._selections,
             self._settings,
             self._origin,
+            self._allocates_lineage,
         )
 
     def extract(self, fn: Extraction) -> "NodeProxy":
@@ -254,10 +262,16 @@ class NodeProxy:
         """Merge independently extracted branches without mutating either one."""
         if not isinstance(other, NodeProxy):
             return NotImplemented
+        if self._allocates_lineage or other._allocates_lineage:
+            raise ValueError("Cannot merge a document root proxy")
         if self._origin is not other._origin:
             raise ValueError("Cannot merge branches from different source documents")
         if self._keys != other._keys:
             raise ValueError("Cannot merge proxies with different headers")
+        if any(
+            row._lineage_id is None for _, row in [*self._items, *other._items]
+        ):
+            raise ValueError("Cannot merge rows without source-record lineage")
 
         merged_by_lineage = {}
         for element, row in [*self._items, *other._items]:
@@ -275,6 +289,7 @@ class NodeProxy:
             selections=self._selections,
             settings=self._settings,
             origin=self._origin,
+            allocates_lineage=False,
         )
 
 
@@ -316,6 +331,7 @@ def xml_node(source, keys: List[str], selections: List[Row]) -> NodeProxy:
         keys=keys,
         selections=selections,
         origin=origin,
+        allocates_lineage=True,
     )
 
 
