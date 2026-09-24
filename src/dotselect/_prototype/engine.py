@@ -106,6 +106,7 @@ class NodeProxy:
         settings: NodeProxySettings | None = None,
         origin=None,
         allocates_lineage: bool = False,
+        split_axis=None,
     ):
         self._parent = parent
         self._items = items
@@ -115,6 +116,7 @@ class NodeProxy:
         self._settings = settings or NodeProxySettings()
         self._origin = origin
         self._allocates_lineage = allocates_lineage
+        self._split_axis = split_axis
 
         self._log(f"Touched: '{assemble_path(self)}'")
 
@@ -148,6 +150,7 @@ class NodeProxy:
                     settings=self._settings,
                     origin=self._origin,
                     allocates_lineage=False,
+                    split_axis=self._split_axis,
                 )
                 for tag, group in grouped_children.items()
             }
@@ -156,15 +159,23 @@ class NodeProxy:
 
     def flatten(self) -> "NodeProxy":
         self._log("Row Mode: 'flatten'")
+        shared_rows = {}
+        flattened_items = []
+        for element, row in self._items:
+            lineage_id = row._lineage_id
+            if lineage_id not in shared_rows:
+                shared_rows[lineage_id] = row.copy(variant_id=None)
+            flattened_items.append((element, shared_rows[lineage_id]))
         return NodeProxy(
             parent=self._parent,
-            items=self._items,
+            items=flattened_items,
             tag=self._tag,
             keys=self._keys,
             selections=self._selections,
             settings=self._settings.partial_copy(new_row_mode="flatten"),
             origin=self._origin,
             allocates_lineage=self._allocates_lineage,
+            split_axis=None,
         )
 
     def split(self) -> "NodeProxy":
@@ -178,17 +189,40 @@ class NodeProxy:
             settings=self._settings.partial_copy(new_row_mode="split"),
             origin=self._origin,
             allocates_lineage=self._allocates_lineage,
+            split_axis=self._split_axis,
         )
 
     def __getattr__(self, tag: str) -> "NodeProxy":
         children = []
+        child_groups = []
+        has_repeated_children = False
         for el, row in self._items:
-            for ch in el.findall(tag):
+            matches = el.findall(tag)
+            has_repeated_children |= len(matches) > 1
+            child_groups.append((row, matches))
+
+        starts_split_axis = (
+            self._settings._row_mode == "split"
+            and not self._allocates_lineage
+            and self._split_axis is None
+            and has_repeated_children
+        )
+        split_axis = (
+            f"{assemble_path(self)}/{tag}" if starts_split_axis else self._split_axis
+        )
+
+        for row, matches in child_groups:
+            for position, ch in enumerate(matches):
                 new_id = self._settings._row_mode != "flatten"
                 lineage_id = (
                     uuid.uuid4().hex if self._allocates_lineage else None
                 )
-                child_row = row.copy(new_id=new_id, lineage_id=lineage_id)
+                variant_id = (split_axis, position) if starts_split_axis else row._variant_id
+                child_row = row.copy(
+                    new_id=new_id,
+                    lineage_id=lineage_id,
+                    variant_id=variant_id,
+                )
                 children.append((ch, child_row))
 
         return NodeProxy(
@@ -200,6 +234,7 @@ class NodeProxy:
             self._settings,
             self._origin,
             False,
+            split_axis,
         )
 
     def __getitem__(self, tag: str) -> "NodeProxy":
@@ -235,6 +270,7 @@ class NodeProxy:
             self._settings,
             self._origin,
             self._allocates_lineage,
+            self._split_axis,
         )
 
     def extract(self, fn: Extraction) -> "NodeProxy":
@@ -254,7 +290,12 @@ class NodeProxy:
 
     def commit(self) -> "NodeProxy":
         """Append normalized snapshots of the rows represented by this proxy."""
+        committed_lineages = set()
         for _, row in self._items:
+            if self._settings._row_mode == "flatten":
+                if row._lineage_id in committed_lineages:
+                    continue
+                committed_lineages.add(row._lineage_id)
             self._selections.append(Row({key: row.get(key, "") for key in self._keys}))
         return self
 
@@ -268,28 +309,58 @@ class NodeProxy:
             raise ValueError("Cannot merge branches from different source documents")
         if self._keys != other._keys:
             raise ValueError("Cannot merge proxies with different headers")
+        if (
+            self._split_axis is not None
+            and other._split_axis is not None
+            and self._split_axis != other._split_axis
+        ):
+            raise ValueError("Cannot merge independently split axes")
         if any(
             row._lineage_id is None for _, row in [*self._items, *other._items]
         ):
             raise ValueError("Cannot merge rows without source-record lineage")
 
-        merged_by_lineage = {}
+        rows_by_lineage = {}
         for element, row in [*self._items, *other._items]:
-            lineage_id = row._lineage_id
-            if lineage_id not in merged_by_lineage:
-                merged_by_lineage[lineage_id] = (element, row.copy())
-            else:
-                merged_by_lineage[lineage_id][1].update(row)
+            rows_by_lineage.setdefault(row._lineage_id, []).append((element, row))
+
+        merged_items = []
+        for source_rows in rows_by_lineage.values():
+            variants = []
+            for _, row in source_rows:
+                if row._variant_id is not None and row._variant_id not in variants:
+                    variants.append(row._variant_id)
+
+            if not variants:
+                element, row = source_rows[0]
+                merged = row.copy()
+                for _, other_row in source_rows[1:]:
+                    merged.update(other_row)
+                merged_items.append((element, merged))
+                continue
+
+            for variant_id in variants:
+                variant_rows = [
+                    (element, row)
+                    for element, row in source_rows
+                    if row._variant_id in (None, variant_id)
+                ]
+                element, row = variant_rows[0]
+                merged = row.copy(variant_id=variant_id)
+                for _, other_row in variant_rows[1:]:
+                    merged.update(other_row)
+                merged_items.append((element, merged))
 
         return NodeProxy(
             parent=None,
-            items=list(merged_by_lineage.values()),
+            items=merged_items,
             tag=self._tag,
             keys=self._keys,
             selections=self._selections,
             settings=self._settings,
             origin=self._origin,
             allocates_lineage=False,
+            split_axis=self._split_axis or other._split_axis,
         )
 
 
@@ -332,6 +403,7 @@ def xml_node(source, keys: List[str], selections: List[Row]) -> NodeProxy:
         selections=selections,
         origin=origin,
         allocates_lineage=True,
+        split_axis=None,
     )
 
 

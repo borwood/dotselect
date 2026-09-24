@@ -1,6 +1,9 @@
 import uuid
 
 
+_UNSET = object()
+
+
 class Row(dict):
     shared_data = []
 
@@ -11,6 +14,7 @@ class Row(dict):
         sealed=False,
         origin=None,
         lineage_id=None,
+        variant_id=None,
         **kw,
     ):
         super().__init__(*args, **kw)
@@ -18,6 +22,7 @@ class Row(dict):
         self._sealed = sealed
         self._origin = origin
         self._lineage_id = lineage_id
+        self._variant_id = variant_id
 
         # TODO: implement shared data dict with path hash keys
         # such that we don't have to copy row data
@@ -28,7 +33,15 @@ class Row(dict):
         self[key] = value
         return self
 
-    def copy(self, new_id: bool = False, lineage_id=None):
+    def extend(self, key, value, *, delimiter: str = ", "):
+        """Append a scalar value using an explicit output delimiter."""
+        if key in self:
+            self[key] = f"{self[key]}{delimiter}{value}"
+        else:
+            self[key] = value
+        return self
+
+    def copy(self, new_id: bool = False, lineage_id=None, variant_id=_UNSET):
         rid = uuid.uuid4().hex if new_id else self._row_id
         return Row(
             self,
@@ -36,6 +49,7 @@ class Row(dict):
             sealed=self._sealed,
             origin=self._origin,
             lineage_id=self._lineage_id if lineage_id is None else lineage_id,
+            variant_id=self._variant_id if variant_id is _UNSET else variant_id,
         )
 
     # def __getitem__
