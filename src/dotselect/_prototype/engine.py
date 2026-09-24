@@ -218,11 +218,14 @@ class NodeProxy:
                     uuid.uuid4().hex if self._allocates_lineage else None
                 )
                 variant_id = (split_axis, position) if starts_split_axis else row._variant_id
-                child_row = row.copy(
-                    new_id=new_id,
-                    lineage_id=lineage_id,
-                    variant_id=variant_id,
-                )
+                if self._settings._row_mode == "flatten" and not self._allocates_lineage:
+                    child_row = row
+                else:
+                    child_row = row.copy(
+                        new_id=new_id,
+                        lineage_id=lineage_id,
+                        variant_id=variant_id,
+                    )
                 children.append((ch, child_row))
 
         return NodeProxy(
