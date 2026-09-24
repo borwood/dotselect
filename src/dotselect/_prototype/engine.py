@@ -243,6 +243,15 @@ class NodeProxy:
     def __getitem__(self, tag: str) -> "NodeProxy":
         return self.__getattr__(tag)
 
+    def __truediv__(self, tag: str) -> "NodeProxy":
+        """Allow ``proxy / \"child\"`` as an alias for dot traversal."""
+        return self.__getattr__(tag)
+
+    @property
+    def elem(self) -> Element | None:
+        """Return the first selected element for ad-hoc inspection."""
+        return self._items[0][0] if self._items else None
+
     @property
     def attributes(self) -> Dict[str, str]:
         """Attributes belonging to the first selected element.

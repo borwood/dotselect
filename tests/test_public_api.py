@@ -6,6 +6,17 @@ from dotselect import to_csv, xml_node
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
+def test_public_api_keeps_slash_traversal_and_first_element_conveniences():
+    """The promoted engine retains the legacy ad-hoc traversal helpers."""
+    root = xml_node("<catalog><book>Example</book></catalog>", [], [])
+
+    book = root / "book"
+
+    assert book.elem is not None
+    assert book.elem.tag == "book"
+    assert book.inner_text == "Example"
+
+
 def test_dot_notation_merges_branches_into_rows(tmp_path):
     """Values found at different depths can become one record per book."""
     headers = ["title", "first_word"]
