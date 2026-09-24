@@ -12,9 +12,9 @@ XML = """\
 """
 
 
-def test_row_assign_is_chainable_and_copies_preserve_or_fork_identity():
+def test_row_assign_is_chainable_and_copies_preserve_or_fork_identity_and_state():
     """Rows are independent mappings, with an explicit choice to fork identity."""
-    row = Row()
+    row = Row(sealed=True)
 
     assert row.assign("title", "First book") is row
     assert row == {"title": "First book"}
@@ -26,6 +26,8 @@ def test_row_assign_is_chainable_and_copies_preserve_or_fork_identity():
     assert same_source == row
     assert same_source._row_id == row._row_id
     assert forked_source._row_id != row._row_id
+    assert same_source._sealed is True
+    assert forked_source._sealed is True
 
     same_source.assign("edition", "first")
     assert "edition" not in row
@@ -63,7 +65,7 @@ def test_commit_appends_one_normalized_selection_per_current_item():
     books = xml_node(XML, headers, selections).book.extract(
         lambda row, attributes, children, text: row.assign("id", attributes["id"]).assign(
             "title", children.title.inner_text
-        )
+        ).assign("internal_debug_value", "not a selected column")
     )
 
     assert books.commit() is books
@@ -71,3 +73,7 @@ def test_commit_appends_one_normalized_selection_per_current_item():
         {"id": "first", "title": "First book", "missing": ""},
         {"id": "second", "title": "Second book", "missing": ""},
     ]
+    assert all("internal_debug_value" not in selection for selection in selections)
+
+    books._items[0][1].assign("title", "Changed after commit")
+    assert selections[0]["title"] == "First book"
