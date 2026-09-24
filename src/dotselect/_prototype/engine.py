@@ -209,10 +209,25 @@ class NodeProxy:
             self, kept_items, self._tag, self._keys, self._selections, self._settings
         )
 
-    def select(self, fn) -> "NodeProxy":
+    def extract(self, fn: Extraction) -> "NodeProxy":
+        """Populate each current row with an extraction callback.
+
+        The callback receives the current row followed by the same element
+        context made available to :meth:`where`.
+        """
         for el, row in self._items:
             a, c, t = self._action_args(el, row)
             fn(row, a, c, t)
+        return self
+
+    def select(self, fn: Extraction) -> "NodeProxy":
+        """Temporary non-public alias for :meth:`extract`."""
+        return self.extract(fn)
+
+    def commit(self) -> "NodeProxy":
+        """Append normalized snapshots of the rows represented by this proxy."""
+        for _, row in self._items:
+            self._selections.append(Row({key: row.get(key, "") for key in self._keys}))
         return self
 
 

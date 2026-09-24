@@ -13,8 +13,13 @@ class Row(dict):
         # such that we don't have to copy row data
         self._shared_data = Row.shared_data
 
+    def assign(self, key, value):
+        """Store a value and return this row for fluent extraction callbacks."""
+        self[key] = value
+        return self
+
     def copy(self, new_id: bool = False):
         rid = uuid.uuid4().hex if new_id else self._row_id
-        return Row(self, row_id=rid)
+        return Row(self, row_id=rid, sealed=self._sealed)
 
     # def __getitem__
