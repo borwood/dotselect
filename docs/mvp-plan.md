@@ -9,8 +9,8 @@ rows for import pipelines, including representative C-CDA documents.
 
 - The public `dotselect` API is served by `_legacy` and has two passing contract
   tests.
-- `_prototype` has the intended architectural direction but does not yet support
-  usable traversal, row extraction, branch merge, or finalization.
+- `_prototype` supports traversal, filtering, row extraction, and finalization
+  behind focused contracts. Branch merging and cardinality semantics remain.
 - `xmlquery` remains a compatibility namespace; it is not new product surface.
 
 ## Delivery slices
@@ -18,8 +18,8 @@ rows for import pipelines, including representative C-CDA documents.
 1. **Traversal contract** — complete. The prototype selects children through
    dot notation, exposes attributes/text and child proxies, strips namespaces,
    and surfaces adapter failures instead of silently returning no matches.
-2. **Row lifecycle** — define `Row.assign`, copy/identity behavior, `extract`,
-   and `commit`.
+2. **Row lifecycle** — complete. `Row.assign`, copy/identity behavior,
+   `extract`, and normalized snapshot `commit` are covered by contract tests.
 3. **Branch merge** — merge independently traversed branches back into source
    rows, including repeated siblings.
 4. **Split and flatten** — write examples/tests that decide cardinality and
