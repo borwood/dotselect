@@ -31,6 +31,12 @@ rows for import pipelines, including representative C-CDA documents.
 
 ## Decisions needed before slice 4
 
-- Whether the MVP verb is `extract` (legacy-compatible) or `select`.
-- Exact behavior for repeated elements in split versus flatten mode.
-- Whether branches may merge only when they share an original source row.
+Decided for MVP:
+
+- `extract` is the canonical verb; `select` remains a non-public alias.
+- Repeated elements split into one row per occurrence by default. `flatten()`
+  yields one row per source record; aggregation is explicit through
+  `Row.extend(..., delimiter=...)`, while repeated `assign()` is last-write-wins.
+- A query supports one active split axis. Merging independently split paths is
+  rejected rather than creating an implicit Cartesian product.
+- Branches merge only when they descend from the same original source record.
