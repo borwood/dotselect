@@ -41,3 +41,33 @@ def test_merge_rejects_branches_from_unrelated_parses():
 
     with pytest.raises(ValueError, match="different source"):
         left + right
+
+
+def test_merge_preserves_lineage_after_filtering_the_document_root():
+    """A root-level filter does not collapse descendant records into one row."""
+    headers = ["title", "author"]
+    selections = []
+    root = xml_node(XML, headers, selections)
+    records = root.where(lambda attributes, children, text: True).record
+
+    titles = records.title.extract(
+        lambda row, attributes, children, text: row.assign("title", text)
+    )
+    authors = records.author.extract(
+        lambda row, attributes, children, text: row.assign("author", text)
+    )
+
+    (records + titles + authors).commit()
+
+    assert selections == [
+        {"title": "First title", "author": "Ada"},
+        {"title": "Second title", "author": "Bruno"},
+    ]
+
+
+def test_merge_rejects_document_root_proxies():
+    """Merging starts with record selections, never the document wrapper itself."""
+    root = xml_node(XML, ["title"], [])
+
+    with pytest.raises(ValueError, match="document root"):
+        root + root
