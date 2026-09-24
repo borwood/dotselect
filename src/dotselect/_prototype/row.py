@@ -35,7 +35,7 @@ class Row(dict):
 
     def extend(self, key, value, *, delimiter: str = ", "):
         """Append a scalar value using an explicit output delimiter."""
-        if key in self:
+        if self.get(key):
             self[key] = f"{self[key]}{delimiter}{value}"
         else:
             self[key] = value

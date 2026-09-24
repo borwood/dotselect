@@ -49,6 +49,16 @@ def test_row_extend_aggregates_values_in_document_order_with_the_given_delimiter
     assert row == {"phones": "111; 222"}
 
 
+def test_row_extend_does_not_prefix_the_first_value_after_an_empty_default():
+    """Header-normalized empty values are not treated as prior content."""
+    row = Row(phones="")
+
+    row.extend("phones", "111", delimiter="; ")
+    row.extend("phones", "222", delimiter="; ")
+
+    assert row == {"phones": "111; 222"}
+
+
 def test_flatten_produces_one_row_per_source_and_extend_accumulates_values():
     """Flattening repeated phones retains one person row and joins in XML order."""
     headers = ["person_id", "name", "phones"]
