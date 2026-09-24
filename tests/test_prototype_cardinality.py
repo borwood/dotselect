@@ -67,6 +67,24 @@ def test_flatten_produces_one_row_per_source_and_extend_accumulates_values():
     ]
 
 
+def test_flattening_parent_before_traversal_aggregates_repeated_children():
+    """A cardinality modifier governs the following child traversal as well."""
+    headers = ["person_id", "name", "phones"]
+    selections = []
+    phones = _people(headers, selections).flatten().phone.extract(
+        lambda row, attributes, children, text: row.extend(
+            "phones", text, delimiter="; "
+        )
+    )
+
+    phones.commit()
+
+    assert selections == [
+        {"person_id": "1", "name": "Ada", "phones": "111; 222"},
+        {"person_id": "2", "name": "Bruno", "phones": "333"},
+    ]
+
+
 def test_flattened_assign_is_last_write_wins_with_one_row_per_source():
     """Assign remains scalar: flattening does not silently invent aggregation."""
     headers = ["person_id", "phone"]
