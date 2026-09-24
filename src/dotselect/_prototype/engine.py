@@ -22,9 +22,7 @@ class Element:
                     for child in self._source_object.iterfind(tag)
                 ]
             case _:
-                return NotImplementedError(
-                    f"Source type {self._source_type} not supported"
-                )
+                raise NotImplementedError(f"Source type {self._source_type} not supported")
 
     @property
     def tag(self) -> str:
@@ -32,9 +30,7 @@ class Element:
             case "xml":
                 return self._source_object.tag
             case _:
-                return NotImplementedError(
-                    f"Source type {self._source_type} not supported"
-                )
+                raise NotImplementedError(f"Source type {self._source_type} not supported")
 
     @property
     def attributes(self) -> dict:
@@ -42,9 +38,7 @@ class Element:
             case "xml":
                 return dict(self._source_object.attrib)
             case _:
-                return NotImplementedError(
-                    f"Source type {self._source_type} not supported"
-                )
+                raise NotImplementedError(f"Source type {self._source_type} not supported")
 
     @property
     def text(self) -> str:
@@ -52,9 +46,7 @@ class Element:
             case "xml":
                 return (self._source_object.text or "").strip()
             case _:
-                return NotImplementedError(
-                    f"Source type {self._source_type} not supported"
-                )
+                raise NotImplementedError(f"Source type {self._source_type} not supported")
 
     @property
     def children(self):
@@ -64,9 +56,7 @@ class Element:
                     Element(child, self._source_type) for child in self._source_object
                 ]
             case _:
-                return NotImplementedError(
-                    f"Source type {self._source_type} not supported"
-                )
+                raise NotImplementedError(f"Source type {self._source_type} not supported")
 
 
 class NodeProxySettings:
@@ -95,7 +85,13 @@ class NodeProxySettings:
 
 
 class NodeProxyChildren(Dict[str, "NodeProxy"]):
-    pass
+    """Direct children made available to predicate and extraction callbacks."""
+
+    def __getattr__(self, tag: str) -> "NodeProxy":
+        try:
+            return self[tag]
+        except KeyError as error:
+            raise AttributeError(tag) from error
 
 
 class NodeProxy:
@@ -106,14 +102,14 @@ class NodeProxy:
         tag: str,
         keys: List[str],
         selections: List[Row],
-        settings: NodeProxySettings = NodeProxySettings(),
+        settings: NodeProxySettings | None = None,
     ):
         self._parent = parent
         self._items = items
         self._tag = tag
         self._keys = keys
         self._selections = selections
-        self._settings = settings
+        self._settings = settings or NodeProxySettings()
 
         self._log(f"Touched: '{assemble_path(self)}'")
 
@@ -139,9 +135,12 @@ class NodeProxy:
         c = NodeProxyChildren(
             {
                 tag: NodeProxy(
-                    [(ch, row.copy(new_id=new_row_id)) for ch in group],
-                    self._keys,
-                    self._selections,
+                    parent=self,
+                    items=[(ch, row.copy(new_id=new_row_id)) for ch in group],
+                    tag=tag,
+                    keys=self._keys,
+                    selections=self._selections,
+                    settings=self._settings,
                 )
                 for tag, group in grouped_children.items()
             }
@@ -173,14 +172,10 @@ class NodeProxy:
     def __getattr__(self, tag: str) -> "NodeProxy":
         children = []
         for el, row in self._items:
-            try:
-                for ch in el.iterfind(tag):
-                    new_id = self._settings._row_mode != "flatten"
-                    child_row = row.copy(new_id=new_id)
-                    children.append((ch, child_row))
-            except Exception as e:
-                self._log(f"No {tag} found at {assemble_path(self)}; Error: {e}")
-                continue
+            for ch in el.findall(tag):
+                new_id = self._settings._row_mode != "flatten"
+                child_row = row.copy(new_id=new_id)
+                children.append((ch, child_row))
 
         return NodeProxy(
             self, children, tag, self._keys, self._selections, self._settings
@@ -188,6 +183,21 @@ class NodeProxy:
 
     def __getitem__(self, tag: str) -> "NodeProxy":
         return self.__getattr__(tag)
+
+    @property
+    def attributes(self) -> Dict[str, str]:
+        """Attributes belonging to the first selected element.
+
+        Predicate child proxies may represent multiple siblings; scalar helpers
+        deliberately use the first one so callers can inspect a direct child
+        without reaching through the internal item list.
+        """
+        return self._items[0][0].attributes if self._items else {}
+
+    @property
+    def inner_text(self) -> str:
+        """Text belonging to the first selected element."""
+        return self._items[0][0].text if self._items else ""
 
     def where(self, fn) -> "NodeProxy":
         kept_items = []
@@ -235,9 +245,6 @@ def _parse(source) -> ET._Element:
 
 def xml_node(source, keys: List[str], selections: List[Row]) -> NodeProxy:
     root = _parse(source)
-    for el in root.iter():
-        print(el.tag)
-        break
 
     return NodeProxy(
         parent=None,
