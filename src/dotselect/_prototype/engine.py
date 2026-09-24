@@ -1,4 +1,5 @@
 from typing import Callable, List, Dict, Tuple, Union
+import uuid
 from lxml import etree as ET
 from collections import defaultdict
 from .row import Row
@@ -103,6 +104,7 @@ class NodeProxy:
         keys: List[str],
         selections: List[Row],
         settings: NodeProxySettings | None = None,
+        origin=None,
     ):
         self._parent = parent
         self._items = items
@@ -110,6 +112,7 @@ class NodeProxy:
         self._keys = keys
         self._selections = selections
         self._settings = settings or NodeProxySettings()
+        self._origin = origin
 
         self._log(f"Touched: '{assemble_path(self)}'")
 
@@ -141,6 +144,7 @@ class NodeProxy:
                     keys=self._keys,
                     selections=self._selections,
                     settings=self._settings,
+                    origin=self._origin,
                 )
                 for tag, group in grouped_children.items()
             }
@@ -156,6 +160,7 @@ class NodeProxy:
             keys=self._keys,
             selections=self._selections,
             settings=self._settings.partial_copy(new_row_mode="flatten"),
+            origin=self._origin,
         )
 
     def split(self) -> "NodeProxy":
@@ -167,18 +172,27 @@ class NodeProxy:
             keys=self._keys,
             selections=self._selections,
             settings=self._settings.partial_copy(new_row_mode="split"),
+            origin=self._origin,
         )
 
     def __getattr__(self, tag: str) -> "NodeProxy":
         children = []
+        is_first_level = self._parent is None
         for el, row in self._items:
             for ch in el.findall(tag):
                 new_id = self._settings._row_mode != "flatten"
-                child_row = row.copy(new_id=new_id)
+                lineage_id = uuid.uuid4().hex if is_first_level else None
+                child_row = row.copy(new_id=new_id, lineage_id=lineage_id)
                 children.append((ch, child_row))
 
         return NodeProxy(
-            self, children, tag, self._keys, self._selections, self._settings
+            self,
+            children,
+            tag,
+            self._keys,
+            self._selections,
+            self._settings,
+            self._origin,
         )
 
     def __getitem__(self, tag: str) -> "NodeProxy":
@@ -206,7 +220,13 @@ class NodeProxy:
             if fn(a, c, t):
                 kept_items.append((el, row))
         return NodeProxy(
-            self, kept_items, self._tag, self._keys, self._selections, self._settings
+            self,
+            kept_items,
+            self._tag,
+            self._keys,
+            self._selections,
+            self._settings,
+            self._origin,
         )
 
     def extract(self, fn: Extraction) -> "NodeProxy":
@@ -229,6 +249,33 @@ class NodeProxy:
         for _, row in self._items:
             self._selections.append(Row({key: row.get(key, "") for key in self._keys}))
         return self
+
+    def __add__(self, other: "NodeProxy") -> "NodeProxy":
+        """Merge independently extracted branches without mutating either one."""
+        if not isinstance(other, NodeProxy):
+            return NotImplemented
+        if self._origin is not other._origin:
+            raise ValueError("Cannot merge branches from different source documents")
+        if self._keys != other._keys:
+            raise ValueError("Cannot merge proxies with different headers")
+
+        merged_by_lineage = {}
+        for element, row in [*self._items, *other._items]:
+            lineage_id = row._lineage_id
+            if lineage_id not in merged_by_lineage:
+                merged_by_lineage[lineage_id] = (element, row.copy())
+            else:
+                merged_by_lineage[lineage_id][1].update(row)
+
+        return NodeProxy(
+            parent=None,
+            items=list(merged_by_lineage.values()),
+            tag=self._tag,
+            keys=self._keys,
+            selections=self._selections,
+            settings=self._settings,
+            origin=self._origin,
+        )
 
 
 def strip_namespaces(root: ET._Element):
@@ -260,13 +307,15 @@ def _parse(source) -> ET._Element:
 
 def xml_node(source, keys: List[str], selections: List[Row]) -> NodeProxy:
     root = _parse(source)
+    origin = object()
 
     return NodeProxy(
         parent=None,
-        items=[(Element(root, "xml"), Row())],
+        items=[(Element(root, "xml"), Row(origin=origin))],
         tag=root.tag,
         keys=keys,
         selections=selections,
+        origin=origin,
     )
 
 
