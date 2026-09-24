@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<catalog>
+  <book id="1001">
+    <author>John Doe</author>
+    <title>Example Book</title>
+    <chapter number="1"><page>Hello world</page></chapter>
+  </book>
+  <book id="1002">
+    <author>John Doe</author>
+    <title>Second Book</title>
+    <chapter number="1"><page>First page</page></chapter>
+  </book>
+  <book id="2001">
+    <author>Jane Smith</author>
+    <title>Excluded Book</title>
+    <chapter number="1"><page>Ignored page</page></chapter>
+  </book>
+</catalog>

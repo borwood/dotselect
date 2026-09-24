@@ -18,3 +18,9 @@ classifiers = [
   "Topic :: Text Processing :: Markup :: XML",
   "Intended Audience :: Developers",
 ]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
