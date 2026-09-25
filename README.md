@@ -11,9 +11,9 @@ assemble one flat row from values found at different depths.
 
 ## Status
 
-Experimental and pre-release. The current public API is backed by a retained
-legacy engine while a more capable replacement is developed behind tests.
-Expect API changes before an MVP release.
+Experimental and pre-release. The public API is powered by the tested
+next-generation engine; the original implementation remains available only as
+a compatibility fallback. Expect API changes before the first MVP release.
 
 ## Example
 
@@ -40,6 +40,22 @@ to_csv(rows, headers, "books.csv")
 The expression `root.book.chapter.page` follows XML structure directly. The
 `+` operator merges branches that came from the same source record, letting
 data found at different levels become one row.
+
+## Repeated elements
+
+Repeated children split into separate rows by default. To keep one row per
+source record and aggregate values into a CSV-safe field, use `flatten()` and
+explicitly choose a delimiter:
+
+```python
+phones = people.flatten().phone.extract(
+    lambda r, a, c, t: r.extend("phones", t, delimiter="; ")
+)
+phones.commit()
+```
+
+Repeated `assign()` calls remain scalar and use the last value; use `extend()`
+when every value should be retained.
 
 ## Development
 
